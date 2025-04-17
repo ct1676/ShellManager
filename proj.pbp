@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://www.purebasic.com/namespace" version="1.0" creator="PureBasic 6.20 (Windows - x64)">
+  <section name="config">
+    <options closefiles="1" openmode="0" name="ShellMgr"/>
+  </section>
+  <section name="data">
+    <explorer view="" pattern="0"/>
+    <log show="1"/>
+    <lastopen date="2025-04-17 09:34" user="Admin" host="DESKTOP-RCUUULA"/>
+  </section>
+  <section name="files">
+    <file name="main.pb">
+      <config load="0" scan="1" panel="1" warn="1" lastopen="1" sortindex="1" panelstate="+"/>
+      <fingerprint md5="8f10ca80c81acb97c5ad05c79feedf2c"/>
+    </file>
+    <file name="window.pbf">
+      <config load="0" scan="1" panel="1" warn="1" lastopen="1" sortindex="2" panelstate="+"/>
+      <fingerprint md5="6ece7053b9c412370c217547c0b7092a"/>
+    </file>
+  </section>
+  <section name="targets">
+    <target name="Default Target" enabled="1" default="1">
+      <inputfile value="main.pb"/>
+      <outputfile value="ShellMgr.exe"/>
+      <executable value="ShellMgr.exe"/>
+      <options xpskin="1" dpiaware="1" debug="1" optimizer="0"/>
+      <icon enable="1">icon.ico</icon>
+    </target>
+  </section>
+</project>
