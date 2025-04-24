@@ -140,6 +140,29 @@ Procedure EditorItem()
   EndIf
 EndProcedure
 
+Procedure SwapItem(first, second)
+  SelectElement(DataList(), first)
+  *FirstElement = @DataList()
+  SelectElement(DataList(), second)
+  *SecondElement = @DataList()
+  SwapElements(DataList(), *FirstElement, *SecondElement)
+  
+  ele = GetJSONElement(JsonList, first)
+  SelectElement(DataList(), first)
+  SetJSONString(GetJSONMember(ele, "name"), DataList()\name)
+  SetJSONString(GetJSONMember(ele, "cmd"), DataList()\cmd)
+  SetGadgetItemText(ListCmd, first, GetShowName(DataList()\name, DataList()\cmd))
+  ele = GetJSONElement(JsonList, second)
+  SelectElement(DataList(), second)
+  SetJSONString(GetJSONMember(ele, "name"), DataList()\name)
+  SetJSONString(GetJSONMember(ele, "cmd"), DataList()\cmd)
+  SetGadgetItemText(ListCmd, second, GetShowName(DataList()\name, DataList()\cmd))
+  
+  SelectItem(second)
+  
+  SaveConfig()
+EndProcedure
+
 Procedure RemoveItem()
   CurItem = GetSelectItem()
   If CurItem < 0 
@@ -188,6 +211,32 @@ Procedure BtnSaveEvent(EventType)
   EditorItem()
 EndProcedure
 
+Procedure BtnUpEvent(EventType)
+  CurItem = GetSelectItem()
+  If CurItem < 0
+    MessageRequester(WindowTitle$, "No Selected ", 0)
+  Else
+    If CurItem <=0
+      MessageRequester(WindowTitle$, "Is Top", 0)
+    Else
+      SwapItem(CurItem, CurItem - 1)
+    EndIf
+  EndIf
+EndProcedure
+
+Procedure BtnDownEvent(EventType)
+  CurItem = GetSelectItem()
+  If CurItem < 0
+    MessageRequester(WindowTitle$, "No Selected ", 0)
+  Else
+    If CurItem >= (ListSize(DataList()) - 1)
+      MessageRequester(WindowTitle$, "Is Bottom", 0)
+    Else
+      SwapItem(CurItem, CurItem + 1)
+    EndIf
+  EndIf
+EndProcedure
+
 Procedure ListCmdEvent(EventType)
   CurItem = GetSelectItem()
   If CurItem >= 0 
@@ -218,8 +267,8 @@ Repeat
   
 Until Event = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 213
-; FirstLine = 169
+; CursorPosition = 231
+; FirstLine = 218
 ; Folding = ---
 ; EnableXP
 ; DPIAware

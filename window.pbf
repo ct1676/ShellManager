@@ -9,7 +9,7 @@
 
 Global MainWindow
 
-Global ListCmd, TxtName, TxtCommand, BtnDel, BtnSave, BtnAdd, BtnRun, txt, txt
+Global TxtName, TxtCommand, BtnDel, BtnSave, BtnAdd, BtnRun, txt, txt, ListCmd, BtnMoveUp, BtnMoveDown
 
 Enumeration FormFont
   #Font_MainWindow_0
@@ -20,23 +20,27 @@ LoadFont(#Font_MainWindow_0,"Arial", 10)
 Declare ResizeGadgetsMainWindow()
 
 Declare BtnAddEvent(EventType)
+Declare BtnDownEvent(EventType)
 Declare ListCmdEvent(EventType)
 Declare BtnRunEvent(EventType)
 Declare BtnSaveEvent(EventType)
+Declare BtnUpEvent(EventType)
 Declare BtnDelEvent(EventType)
 
 Procedure OpenMainWindow(x = 0, y = 0, width = 380, height = 380)
   MainWindow = OpenWindow(#PB_Any, x, y, width, height, "Shell Manager", #PB_Window_SystemMenu | #PB_Window_MinimizeGadget | #PB_Window_ScreenCentered)
-  ListCmd = ListViewGadget(#PB_Any, 10, 10, 360, 250)
   TxtName = StringGadget(#PB_Any, 110, 270, 260, 25, "")
   TxtCommand = StringGadget(#PB_Any, 110, 300, 260, 25, "")
-  BtnDel = ButtonGadget(#PB_Any, 240, 340, 60, 25, "Del")
-  BtnSave = ButtonGadget(#PB_Any, 310, 340, 60, 25, "Save")
-  BtnAdd = ButtonGadget(#PB_Any, 170, 340, 60, 25, "Add")
+  BtnDel = ButtonGadget(#PB_Any, 260, 340, 50, 25, "Del")
+  BtnSave = ButtonGadget(#PB_Any, 320, 340, 50, 25, "Save")
+  BtnAdd = ButtonGadget(#PB_Any, 200, 340, 50, 25, "Add")
   BtnRun = ButtonGadget(#PB_Any, 10, 340, 60, 25, "Run")
   txt = TextGadget(#PB_Any, 10, 270, 40, 25, "Name:")
   SetGadgetFont(txt, FontID(#Font_MainWindow_0))
   txt = TextGadget(#PB_Any, 10, 300, 90, 25, "CommandLine:")
+  ListCmd = ListViewGadget(#PB_Any, 10, 10, 360, 250)
+  BtnMoveUp = ButtonGadget(#PB_Any, 100, 340, 30, 25, "↑")
+  BtnMoveDown = ButtonGadget(#PB_Any, 140, 340, 30, 25, "↓")
 EndProcedure
 
 Procedure ResizeGadgetsMainWindow()
@@ -59,8 +63,6 @@ Procedure MainWindow_Events(event)
 
     Case #PB_Event_Gadget
       Select EventGadget()
-        Case ListCmd
-          ListCmdEvent(EventType())          
         Case BtnDel
           BtnDelEvent(EventType())          
         Case BtnSave
@@ -69,6 +71,12 @@ Procedure MainWindow_Events(event)
           BtnAddEvent(EventType())          
         Case BtnRun
           BtnRunEvent(EventType())          
+        Case ListCmd
+          ListCmdEvent(EventType())          
+        Case BtnMoveUp
+          BtnUpEvent(EventType())          
+        Case BtnMoveDown
+          BtnDownEvent(EventType())          
       EndSelect
   EndSelect
   ProcedureReturn #True
