@@ -7,12 +7,12 @@
   <section name="data">
     <explorer view="" pattern="0"/>
     <log show="1"/>
-    <lastopen date="2025-04-24 22:07" user="Administrator" host="WIN-3R4OA9CKGBS"/>
+    <lastopen date="2025-04-25 19:29" user="Administrator" host="WIN-3R4OA9CKGBS"/>
   </section>
   <section name="files">
     <file name="main.pb">
       <config load="0" scan="1" panel="1" warn="1" lastopen="1" sortindex="1" panelstate="+"/>
-      <fingerprint md5="473cbab67a45c4d6fc95be1f49d6a328"/>
+      <fingerprint md5="b13c1f237a787836e6839b4c81f9c306"/>
     </file>
     <file name="window.pbf">
       <config load="0" scan="1" panel="1" warn="1" lastopen="1" sortindex="2" panelstate="+"/>

@@ -184,12 +184,36 @@ Procedure RemoveItem()
   EndIf
 EndProcedure
 
-Procedure RunItem(index.l)
-  If OpenConsole()
-    SelectElement(DataList(), index)
-    RunProgram(DataList()\cmd)
-    CloseConsole()
+Procedure RunShell(command$)
+  tempPath$ = GetTemporaryDirectory()
+  Select #PB_Compiler_OS
+    Case #PB_OS_Windows
+      scriptFile$ = tempPath$ + "run_command.bat"
+      runCommand$ = scriptFile$
+    Case #PB_OS_MacOS, #PB_OS_Linux
+      scriptFile$ = tempPath$ + "run_command.sh"
+      runCommand$ = "sh " + scriptFile$
+  EndSelect
+  
+  If CreateFile(0, scriptFile$)
+    WriteStringN(0, command$)
+    CloseFile(0)
+  Else
+    MessageRequester(WindowTitle$, "Couldn't create shell file", 0)
   EndIf
+  
+  If #PB_Compiler_OS = #PB_OS_MacOS Or #PB_Compiler_OS = #PB_OS_Linux
+    RunProgram("chmod", "+x " + scriptFile$, "")
+  EndIf
+  
+  If Not RunProgram(runCommand$)
+    MessageRequester(WindowTitle$, "Couldn't run shell file", 0)
+  EndIf
+EndProcedure
+
+Procedure RunItem(index.l)
+  SelectElement(DataList(), index)
+  RunShell(DataList()\cmd)
 EndProcedure
 
 Procedure BtnRunEvent(EventType)
@@ -267,8 +291,8 @@ Repeat
   
 Until Event = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 231
-; FirstLine = 218
-; Folding = ---
+; CursorPosition = 236
+; FirstLine = 206
+; Folding = ----
 ; EnableXP
 ; DPIAware
