@@ -2,16 +2,63 @@
 
 Global WindowTitle$ = "Shell Manager"
 
-If OpenMutex_(#SYNCHRONIZE, #False, WindowTitle$) = 0
-  CreateMutex_(0, #False, WindowTitle$)
-Else
-  hwnd = FindWindow_(0, WindowTitle$) ; 替换为程序窗口的标题
-  If hwnd
-    ShowWindow_(hwnd, #SW_RESTORE)         ; 恢复窗口
-    SetForegroundWindow_(hwnd)             ; 将窗口置于前台
-  EndIf
+;是否是windows
+#IS_WINDOWS_OS = 1
+
+;--------------overlay open----------------
+
+#MutexName = "shell_manager"
+
+Procedure.i IsAlreadyRunning()
+  Protected result.i = #False
+  Protected mutex.i
+  
+  Select #PB_Compiler_OS
+    Case #PB_OS_Windows
+      mutex = CreateMutex_(0, #True, #MutexName)
+      If GetLastError_() = #ERROR_ALREADY_EXISTS
+        result = #True
+      EndIf
+    Case #PB_OS_MacOS, #PB_OS_Linux
+      ; 使用文件锁定机制
+      Protected lockFile.s = "/tmp/" + #MutexName + ".lock"
+      mutex = OpenFile(0, lockFile)
+      If mutex = 0
+        mutex = CreateFile(0, lockFile)
+        If mutex = 0
+          result = #True
+        EndIf
+      Else
+        result = #True
+      EndIf
+  EndSelect
+  
+  ProcedureReturn result
+EndProcedure
+
+Procedure BringWindowToFront()
+  Select #PB_Compiler_OS
+    Case #PB_OS_Windows
+      Protected hWnd.i = FindWindow_(0, WindowTitle$)
+      If hWnd
+        ShowWindow_(hWnd, #SW_RESTORE)
+        SetForegroundWindow_(hWnd)
+      EndIf
+    Case #PB_OS_MacOS
+      ; macOS 使用 AppleScript 将窗口置于前台
+      RunProgram("/usr/bin/osascript", "-e " + WindowTitle$, "")
+    Case #PB_OS_Linux
+      ; Linux 使用 `wmctrl` 工具
+      RunProgram("wmctrl", "-a " + WindowTitle$, "")
+  EndSelect
+EndProcedure
+
+If IsAlreadyRunning()
+  BringWindowToFront()
   End
 EndIf
+
+;-------------------CRUD-----------------------
 
 ;列表数据结构
 Structure ItemType
@@ -216,6 +263,8 @@ Procedure RunItem(index.l)
   RunShell(DataList()\cmd)
 EndProcedure
 
+;---------------wdinwos event-------------------
+
 Procedure BtnRunEvent(EventType)
   CurItem = GetSelectItem()
   If CurItem >= 0 
@@ -276,23 +325,122 @@ Procedure ListCmdEvent(EventType)
   EndIf
 EndProcedure
 
+;------------------tray----------------
+
+CompilerIf #IS_WINDOWS_OS
+  #WM_USER = $0400
+  #WM_TRAYICON = #WM_USER + 1
+  #NIM_ADD = 0
+  #NIM_MODIFY = 1
+  #NIM_DELETE = 2
+  #NIF_MESSAGE = $1
+  #NIF_ICON = $2
+  #NIF_TIP = $4
+  
+  #TRAY_MENU = 0
+  #TRAY_MENU_EXIT = 0
+  
+  Global TrayIcon.NOTIFYICONDATA
+  
+  Procedure CreateTrayIcon()
+    Protected hIcon.i
+    ExtractIconEx_(ProgramFilename(), 0, @hIcon, 0, 1)
+    TrayIcon\cbSize = SizeOf(NOTIFYICONDATA)
+    TrayIcon\hWnd = FindWindow_(0, WindowTitle$)
+    TrayIcon\uID = 1
+    TrayIcon\uFlags = #NIF_MESSAGE | #NIF_ICON | #NIF_TIP
+    TrayIcon\uCallbackMessage = #WM_TRAYICON
+    TrayIcon\hIcon = hIcon
+    PokeS(@TrayIcon\szTip, WindowTitle$, -1, #PB_Unicode)
+    Shell_NotifyIcon_(#NIM_ADD, @TrayIcon)
+  EndProcedure
+  
+  Procedure CreateTrayMenu()
+    If CreatePopupMenu(#TRAY_MENU)
+      Define index.i = 1
+      ForEach DataList()
+        MenuItem(index, DataList()\name)  
+        index + 1
+      Next
+      If ListSize(DataList()) > 0
+        MenuBar()
+      EndIf 
+      MenuItem(#TRAY_MENU_EXIT, "Exit")  
+    EndIf
+  EndProcedure
+  
+  Procedure RemoveTrayIcon()
+    Shell_NotifyIcon_(#NIM_DELETE, @TrayIcon)
+  EndProcedure
+  
+  Procedure DoTrayMenuEvent()
+    result.l = EventMenu()
+    Select result
+      Case #TRAY_MENU_EXIT
+        RemoveTrayIcon()
+        End
+      Default
+        RunItem(result-1)
+    EndSelect
+  EndProcedure
+  
+  Procedure ShowTrayMenu()
+    CreateTrayMenu()
+    DisplayPopupMenu(#TRAY_MENU, WindowID(MainWindow))
+  EndProcedure
+  
+  Procedure MainWindowCallback(_windowID, Message, wParam, lParam)
+    Select Message
+      Case #WM_CLOSE
+        HideWindow(MainWindow, #True)
+      Case #WM_TRAYICON
+        If lParam = #WM_LBUTTONDBLCLK
+          HideWindow(MainWindow, #False)
+          SetForegroundWindow_(WindowID(MainWindow))
+        ElseIf lParam = #WM_RBUTTONDOWN
+          ShowTrayMenu()
+        EndIf
+    EndSelect
+    ProcedureReturn #PB_ProcessPureBasicEvents
+  EndProcedure
+  
+CompilerEndIf
+
+;---------------main loop----------------
+
 OpenMainWindow()
+
+CompilerIf #IS_WINDOWS_OS
+  CreateTrayMenu()
+  CreateTrayIcon()
+  SetWindowCallback(@MainWindowCallback())
+CompilerEndIf
 
 LoadConfig()
 
 Repeat
   Event = WaitWindowEvent()
   
+  If Event = #PB_Event_Menu
+    CompilerIf #IS_WINDOWS_OS
+      DoTrayMenuEvent()
+    CompilerEndIf
+  EndIf
+  
   Select EventWindow()
     Case MainWindow
       MainWindow_Events(Event)
-      
   EndSelect
   
+  CompilerIf #IS_WINDOWS_OS
+  ForEver
+CompilerElse
 Until Event = #PB_Event_CloseWindow
+CompilerEndIf
+
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 236
-; FirstLine = 206
-; Folding = ----
+; CursorPosition = 438
+; FirstLine = 390
+; Folding = ------
 ; EnableXP
 ; DPIAware
