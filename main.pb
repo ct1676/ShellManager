@@ -330,6 +330,7 @@ CompilerIf #IS_WINDOWS_OS
   
   Global CurVersion.s = "1.0.2"
   Global HasNewVersion.i = #False
+  Global IsUpdating.i = #False
   Global DownloadUrl.s = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
   Global VersionUrl.s = "https://api.github.com/repos/ct1676/ShellManager/releases/latest"
   
@@ -375,7 +376,8 @@ CompilerIf #IS_WINDOWS_OS
       End
     EndIf
     
-    RunProgram(batchFilePath, "", "", #PB_Program_Wait | #PB_Program_Hide)
+    IsUpdating = #True
+    RunProgram(batchFilePath, "", "", #PB_Program_Hide)
   EndProcedure
   
   Procedure CheckUpdate()
@@ -448,7 +450,9 @@ CompilerIf #IS_WINDOWS_OS
       If ListSize(DataList()) > 0
         MenuBar()
       EndIf 
-      If HasNewVersion
+      If IsUpdating
+        MenuItem(#TRAY_MENU_UPDATE, "Updating...")  
+      ElseIf HasNewVersion
         MenuItem(#TRAY_MENU_UPDATE, "Update(*)")  
       Else
         MenuItem(#TRAY_MENU_UPDATE, "Update")  
@@ -468,7 +472,9 @@ CompilerIf #IS_WINDOWS_OS
         RemoveTrayIcon()
         End
       Case #TRAY_MENU_UPDATE
-        RunUpdate()
+        If Not IsUpdating
+          RunUpdate()
+        EndIf 
       Default
         RunItem(result-100)
     EndSelect
@@ -531,8 +537,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 398
-; FirstLine = 377
+; CursorPosition = 476
+; FirstLine = 445
 ; Folding = ------
 ; EnableXP
 ; DPIAware
