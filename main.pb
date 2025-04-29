@@ -348,14 +348,14 @@ CompilerIf #IS_WINDOWS_OS
     batchContent + ")" + #CRLF$
     batchContent + "echo 正在结束程序: !processName!" + #CRLF$
     batchContent + "taskkill /f /im '!processName!' >nul 2>&1" + #CRLF$
-    batchContent + #CRLF$
+    batchContent + "echo 等待 1 秒..."+ #CRLF$
+    batchContent + "timeout /t 1 /nobreak >nul"+ #CRLF$
     batchContent + "echo 正在替换文件..." + #CRLF$
     batchContent + "move /y '!downloadPath!' '!targetPath!' >nul" + #CRLF$
     batchContent + "if %errorlevel% neq 0 (" + #CRLF$
     batchContent + "    echo 替换文件失败，请检查目标路径是否正确。" + #CRLF$
     batchContent + "    exit /b 1" + #CRLF$
     batchContent + ")" + #CRLF$
-    batchContent + #CRLF$
     batchContent + "echo 正在重新启动程序..." + #CRLF$
     batchContent + "start '' '!targetPath!'" + #CRLF$
     batchContent + "echo 操作完成。" + #CRLF$
@@ -370,7 +370,7 @@ CompilerIf #IS_WINDOWS_OS
       Debug "无法创建批处理文件"
       End
     EndIf
-
+    
     RunProgram(batchFilePath, "", "", #PB_Program_Wait | #PB_Program_Hide)
   EndProcedure
   
@@ -491,8 +491,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 329
-; FirstLine = 318
+; CursorPosition = 373
+; FirstLine = 327
 ; Folding = ------
 ; EnableXP
 ; DPIAware
