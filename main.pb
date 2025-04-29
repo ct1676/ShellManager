@@ -328,7 +328,7 @@ EndProcedure
 ;---------------updater------------------
 CompilerIf #IS_WINDOWS_OS
   
-  Global CurVersion.s = "1.0.0"
+  Global CurVersion.s = "1.0.2"
   Global HasNewVersion.i = #False
   Global DownloadUrl.s = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
   Global VersionUrl.s = "https://api.github.com/repos/ct1676/ShellManager/releases/latest"
@@ -390,18 +390,20 @@ CompilerIf #IS_WINDOWS_OS
         Debug "解析成功！"
         RemoteVersion.s = GetJSONString(GetJSONMember(JSONValue(0), "body"))
         DownloadUrl = GetJSONString(GetJSONMember(GetJSONElement(GetJSONMember(JSONValue(0), "assets"), 0), "browser_download_url"))
-        If CompareMemoryString(@RemoteVersion, @CurVersion, #PB_String_CaseSensitive)
+        If CompareMemoryString(@RemoteVersion, @CurVersion, #PB_String_CaseSensitive) > 0
           HasNewVersion = #True
           msg = MessageRequester(WindowTitle$, "Have new version, want to update?", #PB_MessageRequester_YesNo)
           If msg = #PB_MessageRequester_Yes
             RunUpdate()
           EndIf
         Else
-          Debug "JSON 解析失败！"
+          Debug "暂无更新"
         EndIf
       Else
-        Debug "HTTP 请求失败！"
+        Debug "JSON 解析失败！"
       EndIf
+    Else
+      Debug "HTTP 请求失败！"
     EndIf
     
   EndProcedure
@@ -502,6 +504,7 @@ CompilerIf #IS_WINDOWS_OS
   CreateTrayMenu()
   CreateTrayIcon()
   SetWindowCallback(@MainWindowCallback())
+  SetWindowTitle(MainWindow, WindowTitle$ + " v" + CurVersion) 
   CheckUpdate()
 CompilerEndIf
 
@@ -528,8 +531,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 315
-; FirstLine = 305
+; CursorPosition = 398
+; FirstLine = 377
 ; Folding = ------
 ; EnableXP
 ; DPIAware
