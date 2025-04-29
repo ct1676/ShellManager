@@ -328,16 +328,20 @@ EndProcedure
 ;---------------updater------------------
 CompilerIf #IS_WINDOWS_OS
   
+  Global CurVersion.s = "1.0.0"
+  Global HasNewVersion.i = #False
+  Global DownloadUrl.s = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
+  Global VersionUrl.s = "https://api.github.com/repos/ct1676/ShellManager/releases/latest"
+  
   Procedure RunUpdate()
-    Define.s batchFilePath, downloadUrl, tempFilePath, exeFilePath, processName, batchContent
-    downloadUrl = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
+    Define.s batchFilePath, tempFilePath, exeFilePath, processName, batchContent
     tempFilePath = GetTemporaryDirectory() + "temp.exe"
     batchFilePath = GetTemporaryDirectory() + "update.bat"
     exeFilePath = ProgramFilename()
     processName = GetFilePart(exeFilePath)
     batchContent = "@echo off" + #CRLF$
     batchContent + "setlocal enabledelayedexpansion" + #CRLF$
-    batchContent + "set 'url=" + downloadUrl + "'" + #CRLF$
+    batchContent + "set 'url=" + DownloadUrl + "'" + #CRLF$
     batchContent + "set 'downloadPath=" + tempFilePath + "'" + #CRLF$
     batchContent + "set 'targetPath=" + exeFilePath + "'" + #CRLF$
     batchContent + "set 'processName=" + processName + "'" + #CRLF$
@@ -372,6 +376,34 @@ CompilerIf #IS_WINDOWS_OS
     EndIf
     
     RunProgram(batchFilePath, "", "", #PB_Program_Wait | #PB_Program_Hide)
+  EndProcedure
+  
+  Procedure CheckUpdate()
+    Define.s jsonResponse
+    Define result
+    result = ReceiveHTTPMemory(VersionUrl)
+    If result
+      jsonResponse = PeekS(result, MemorySize(result), #PB_UTF8)
+      FreeMemory(result)
+      Debug "JSON 响应: " + jsonResponse
+      If ParseJSON(0, jsonResponse)
+        Debug "解析成功！"
+        RemoteVersion.s = GetJSONString(GetJSONMember(JSONValue(0), "body"))
+        DownloadUrl = GetJSONString(GetJSONMember(GetJSONElement(GetJSONMember(JSONValue(0), "assets"), 0), "browser_download_url"))
+        If CompareMemoryString(@RemoteVersion, @CurVersion, #PB_String_CaseSensitive)
+          HasNewVersion = #True
+          msg = MessageRequester(WindowTitle$, "Have new version, want to update?", #PB_MessageRequester_YesNo)
+          If msg = #PB_MessageRequester_Yes
+            RunUpdate()
+          EndIf
+        Else
+          Debug "JSON 解析失败！"
+        EndIf
+      Else
+        Debug "HTTP 请求失败！"
+      EndIf
+    EndIf
+    
   EndProcedure
   
   ;------------------tray----------------
@@ -414,7 +446,11 @@ CompilerIf #IS_WINDOWS_OS
       If ListSize(DataList()) > 0
         MenuBar()
       EndIf 
-      MenuItem(#TRAY_MENU_UPDATE, "Update")  
+      If HasNewVersion
+        MenuItem(#TRAY_MENU_UPDATE, "Update(*)")  
+      Else
+        MenuItem(#TRAY_MENU_UPDATE, "Update")  
+      EndIf
       MenuItem(#TRAY_MENU_EXIT, "Exit")  
     EndIf
   EndProcedure
@@ -466,6 +502,7 @@ CompilerIf #IS_WINDOWS_OS
   CreateTrayMenu()
   CreateTrayIcon()
   SetWindowCallback(@MainWindowCallback())
+  CheckUpdate()
 CompilerEndIf
 
 LoadConfig()
@@ -491,8 +528,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 373
-; FirstLine = 327
+; CursorPosition = 315
+; FirstLine = 305
 ; Folding = ------
 ; EnableXP
 ; DPIAware
