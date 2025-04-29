@@ -325,9 +325,57 @@ Procedure ListCmdEvent(EventType)
   EndIf
 EndProcedure
 
-;------------------tray----------------
-
+;---------------updater------------------
 CompilerIf #IS_WINDOWS_OS
+  
+  Procedure RunUpdate()
+    Define.s batchFilePath, downloadUrl, tempFilePath, exeFilePath, processName, batchContent
+    downloadUrl = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
+    tempFilePath = GetTemporaryDirectory() + "temp.exe"
+    batchFilePath = GetTemporaryDirectory() + "update.bat"
+    exeFilePath = ProgramFilename()
+    processName = GetFilePart(exeFilePath)
+    batchContent = "@echo off" + #CRLF$
+    batchContent + "setlocal enabledelayedexpansion" + #CRLF$
+    batchContent + "set 'url=" + downloadUrl + "'" + #CRLF$
+    batchContent + "set 'downloadPath=" + tempFilePath + "'" + #CRLF$
+    batchContent + "set 'targetPath=" + exeFilePath + "'" + #CRLF$
+    batchContent + "set 'processName=" + processName + "'" + #CRLF$
+    batchContent + "bitsadmin /transfer 'DownloadJob' /priority normal !url! !downloadPath!" + #CRLF$
+    batchContent + "if not exist '!downloadPath!' (" + #CRLF$
+    batchContent + "    echo 下载失败，请检查网络连接或下载地址。" + #CRLF$
+    batchContent + "    exit /b 1" + #CRLF$
+    batchContent + ")" + #CRLF$
+    batchContent + "echo 正在结束程序: !processName!" + #CRLF$
+    batchContent + "taskkill /f /im '!processName!' >nul 2>&1" + #CRLF$
+    batchContent + #CRLF$
+    batchContent + "echo 正在替换文件..." + #CRLF$
+    batchContent + "move /y '!downloadPath!' '!targetPath!' >nul" + #CRLF$
+    batchContent + "if %errorlevel% neq 0 (" + #CRLF$
+    batchContent + "    echo 替换文件失败，请检查目标路径是否正确。" + #CRLF$
+    batchContent + "    exit /b 1" + #CRLF$
+    batchContent + ")" + #CRLF$
+    batchContent + #CRLF$
+    batchContent + "echo 正在重新启动程序..." + #CRLF$
+    batchContent + "start '' '!targetPath!'" + #CRLF$
+    batchContent + "echo 操作完成。" + #CRLF$
+    batchContent + "exit /b 0" + #CRLF$
+    batchContent = ReplaceString(batchContent, "'", #DQUOTE$) 
+    
+    If CreateFile(0, batchFilePath)
+      WriteString(0, batchContent)
+      CloseFile(0)
+      Debug "批处理文件已生成: " + batchFilePath
+    Else
+      Debug "无法创建批处理文件"
+      End
+    EndIf
+
+    RunProgram(batchFilePath, "", "", #PB_Program_Wait | #PB_Program_Hide)
+  EndProcedure
+  
+  ;------------------tray----------------
+  
   #WM_USER = $0400
   #WM_TRAYICON = #WM_USER + 1
   #NIM_ADD = 0
@@ -339,6 +387,7 @@ CompilerIf #IS_WINDOWS_OS
   
   #TRAY_MENU = 0
   #TRAY_MENU_EXIT = 0
+  #TRAY_MENU_UPDATE = 1
   
   Global TrayIcon.NOTIFYICONDATA
   
@@ -357,7 +406,7 @@ CompilerIf #IS_WINDOWS_OS
   
   Procedure CreateTrayMenu()
     If CreatePopupMenu(#TRAY_MENU)
-      Define index.i = 1
+      Define index.i = 100
       ForEach DataList()
         MenuItem(index, DataList()\name)  
         index + 1
@@ -365,6 +414,7 @@ CompilerIf #IS_WINDOWS_OS
       If ListSize(DataList()) > 0
         MenuBar()
       EndIf 
+      MenuItem(#TRAY_MENU_UPDATE, "Update")  
       MenuItem(#TRAY_MENU_EXIT, "Exit")  
     EndIf
   EndProcedure
@@ -379,8 +429,10 @@ CompilerIf #IS_WINDOWS_OS
       Case #TRAY_MENU_EXIT
         RemoveTrayIcon()
         End
+      Case #TRAY_MENU_UPDATE
+        RunUpdate()
       Default
-        RunItem(result-1)
+        RunItem(result-100)
     EndSelect
   EndProcedure
   
@@ -439,8 +491,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 438
-; FirstLine = 390
+; CursorPosition = 329
+; FirstLine = 318
 ; Folding = ------
 ; EnableXP
 ; DPIAware
