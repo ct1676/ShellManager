@@ -1,5 +1,6 @@
 ﻿XIncludeFile "window.pbf" ; Include the first window definition
 
+Global CurVersion.s = "1.0.3"
 Global WindowTitle$ = "Shell Manager"
 
 ;是否是windows
@@ -37,19 +38,20 @@ Procedure.i IsAlreadyRunning()
 EndProcedure
 
 Procedure BringWindowToFront()
+  MatchTitle$ = WindowTitle$ + " v" + CurVersion
   Select #PB_Compiler_OS
     Case #PB_OS_Windows
-      Protected hWnd.i = FindWindow_(0, WindowTitle$)
+      Protected hWnd.i = FindWindow_(0, MatchTitle$)
       If hWnd
         ShowWindow_(hWnd, #SW_RESTORE)
         SetForegroundWindow_(hWnd)
       EndIf
     Case #PB_OS_MacOS
       ; macOS 使用 AppleScript 将窗口置于前台
-      RunProgram("/usr/bin/osascript", "-e " + WindowTitle$, "")
+      RunProgram("/usr/bin/osascript", "-e " + MatchTitle$, "")
     Case #PB_OS_Linux
       ; Linux 使用 `wmctrl` 工具
-      RunProgram("wmctrl", "-a " + WindowTitle$, "")
+      RunProgram("wmctrl", "-a " + MatchTitle$, "")
   EndSelect
 EndProcedure
 
@@ -328,7 +330,6 @@ EndProcedure
 ;---------------updater------------------
 CompilerIf #IS_WINDOWS_OS
   
-  Global CurVersion.s = "1.0.3"
   Global HasNewVersion.i = #False
   Global IsUpdating.i = #False
   Global DownloadUrl.s = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
@@ -537,8 +538,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 330
-; FirstLine = 316
+; CursorPosition = 53
+; FirstLine = 21
 ; Folding = ------
 ; EnableXP
 ; DPIAware
