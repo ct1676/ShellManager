@@ -328,7 +328,7 @@ EndProcedure
 ;---------------updater------------------
 CompilerIf #IS_WINDOWS_OS
   
-  Global CurVersion.s = "1.0.2"
+  Global CurVersion.s = "1.0.3"
   Global HasNewVersion.i = #False
   Global IsUpdating.i = #False
   Global DownloadUrl.s = "https://github.com/ct1676/ShellManager/releases/download/release/ShellMgr.exe"
@@ -537,8 +537,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 476
-; FirstLine = 445
+; CursorPosition = 330
+; FirstLine = 316
 ; Folding = ------
 ; EnableXP
 ; DPIAware
