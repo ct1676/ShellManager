@@ -1,6 +1,6 @@
 ﻿XIncludeFile "window.pbf" ; Include the first window definition
 
-Global CurVersion.s = "1.0.3"
+Global CurVersion.s = "1.0.4"
 Global WindowTitle$ = "Shell Manager"
 
 ;是否是windows
@@ -74,7 +74,7 @@ EndStructure
 #Config_File = 0
 
 ;配置文件目录
-Global CfgPath$ = GetTemporaryDirectory() + "cmd_mgr_info.cfg"
+Global CfgPath$ =  GetTemporaryDirectory() + "cmd_mgr_info.cfg" ; GetUserDirectory(#PB_Directory_ProgramData)
 
 ;列表数据
 Global NewList DataList.ItemType()
@@ -265,6 +265,45 @@ Procedure RunItem(index.l)
   RunShell(DataList()\cmd)
 EndProcedure
 
+;---------auto run-------------------------
+
+Global RegeditSubKey$ = "Software\Microsoft\Windows\CurrentVersion\Run"
+Global IsAutoRun.i = #False
+
+Procedure CheckAutoRun()
+  sResult.s = Space(255)
+  lResultLen.l = 255
+  lKey.l = 0
+  If RegOpenKeyEx_(#HKEY_CURRENT_USER, RegeditSubKey$, #Null, #KEY_ALL_ACCESS, @lKey) = #ERROR_SUCCESS 
+    If lKey
+      If RegQueryValueEx_(lKey, WindowTitle$, 0, 0, @sResult, @lResultLen) = #ERROR_SUCCESS 
+        Debug "键值: " + PeekS(@sResult)
+        IsAutoRun = #True
+      Else
+        Debug "无法读取键值"
+      EndIf
+      RegCloseKey_(lKey) 
+    EndIf
+  EndIf
+EndProcedure
+
+Procedure EditAutoRun()
+  sUrl.s = #DQUOTE$ + ProgramFilename() + #DQUOTE$
+  lKey.l = 0
+  If RegOpenKeyEx_(#HKEY_CURRENT_USER, RegeditSubKey$, #Null, #KEY_ALL_ACCESS, @lKey) = #ERROR_SUCCESS 
+    If lKey
+      If IsAutoRun
+        RegDeleteValue_(lKey, WindowTitle$)
+        IsAutoRun = #False
+      Else
+        RegSetValueEx_(lKey, WindowTitle$, 0, #REG_SZ, @sUrl, Len(sUrl)*2)
+        IsAutoRun = #True
+      EndIf
+      RegCloseKey_(lKey) 
+    EndIf
+  EndIf
+EndProcedure
+
 ;---------------wdinwos event-------------------
 
 Procedure BtnRunEvent(EventType)
@@ -353,11 +392,11 @@ CompilerIf #IS_WINDOWS_OS
     batchContent + "    exit /b 1" + #CRLF$
     batchContent + ")" + #CRLF$
     batchContent + "echo 正在结束程序: !processName!" + #CRLF$
-    batchContent + "taskkill /f /im '!processName!' >nul 2>&1" + #CRLF$
+batchContent + "taskkill /f /im '!processName!' >nul 2>&1" + #CRLF$
     batchContent + "echo 等待 1 秒..."+ #CRLF$
     batchContent + "timeout /t 1 /nobreak >nul"+ #CRLF$
     batchContent + "echo 正在替换文件..." + #CRLF$
-    batchContent + "move /y '!downloadPath!' '!targetPath!' >nul" + #CRLF$
+batchContent + "move /y '!downloadPath!' '!targetPath!' >nul" + #CRLF$
     batchContent + "if %errorlevel% neq 0 (" + #CRLF$
     batchContent + "    echo 替换文件失败，请检查目标路径是否正确。" + #CRLF$
     batchContent + "    exit /b 1" + #CRLF$
@@ -425,6 +464,7 @@ CompilerIf #IS_WINDOWS_OS
   #TRAY_MENU = 0
   #TRAY_MENU_EXIT = 0
   #TRAY_MENU_UPDATE = 1
+  #TRAY_MENU_AUTORUN = 2
   
   Global TrayIcon.NOTIFYICONDATA
   
@@ -454,10 +494,15 @@ CompilerIf #IS_WINDOWS_OS
       If IsUpdating
         MenuItem(#TRAY_MENU_UPDATE, "Updating...")  
       ElseIf HasNewVersion
-        MenuItem(#TRAY_MENU_UPDATE, "Update(*)")  
+        MenuItem(#TRAY_MENU_UPDATE, "Update (*)")  
       Else
         MenuItem(#TRAY_MENU_UPDATE, "Update")  
       EndIf
+      If IsAutoRun
+        MenuItem(#TRAY_MENU_AUTORUN, "Run On Start (✓)")
+      Else
+        MenuItem(#TRAY_MENU_AUTORUN, "Run On Start (✕)")
+      EndIf 
       MenuItem(#TRAY_MENU_EXIT, "Exit")  
     EndIf
   EndProcedure
@@ -476,6 +521,8 @@ CompilerIf #IS_WINDOWS_OS
         If Not IsUpdating
           RunUpdate()
         EndIf 
+      Case #TRAY_MENU_AUTORUN
+        EditAutoRun()
       Default
         RunItem(result-100)
     EndSelect
@@ -513,6 +560,7 @@ CompilerIf #IS_WINDOWS_OS
   SetWindowCallback(@MainWindowCallback())
   SetWindowTitle(MainWindow, WindowTitle$ + " v" + CurVersion) 
   CheckUpdate()
+  CheckAutoRun()
 CompilerEndIf
 
 LoadConfig()
@@ -538,8 +586,8 @@ Until Event = #PB_Event_CloseWindow
 CompilerEndIf
 
 ; IDE Options = PureBasic 6.20 (Windows - x64)
-; CursorPosition = 53
-; FirstLine = 21
+; CursorPosition = 559
+; FirstLine = 536
 ; Folding = ------
 ; EnableXP
 ; DPIAware
